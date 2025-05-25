@@ -27,7 +27,7 @@
     <ClInclude Include="ParseRule.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Identifier.h">
+    <ClInclude Include="Keyword.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -47,7 +47,7 @@
     <ClCompile Include="ParseRule.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Identifier.cpp">
+    <ClCompile Include="Keyword.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -27,9 +27,11 @@ struct ParseRule
 };
 
 inline Expr* ledNone(PrattParser& parser, Expr* left) { return left; }
-Expr* nudIdentifier(PrattParser& parser);
+Expr* nudKeyword(PrattParser& parser);
 Expr* nudLiteral(PrattParser& parser);
+Expr* nudIdentifier(PrattParser& parser);
 Expr* nudUnary(PrattParser& parser);
 Expr* nudGroup(PrattParser& parser);
+Expr* ledEquals(PrattParser& parser, Expr* left);
 Expr* ledBinary(PrattParser& parser, Expr* left);
 Expr* parseExpr(PrattParser& parser, TokenType end = TokenType::EndOfFile, int minBindingPower = 0);

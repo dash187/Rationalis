@@ -1,6 +1,6 @@
 #include "ParseRule.h"
 #include "Parser.h"
-#include "Identifier.h"
+#include "Keyword.h"
 #include <string>
 #include <print>
 
@@ -17,7 +17,9 @@ const ParseTable& ParseRule::Table()
 		ParseRule{ nudGroup, nullptr, 0, 0 },  // LBracket
 		ParseRule{ nullptr, ledNone, 0, 0},  // RBracket
 		ParseRule{ nudLiteral, nullptr, 0, 0 },  // Number
+		ParseRule{ nullptr, ledEquals, 0, 0 },  // Equals
 		ParseRule{ nudIdentifier, nullptr, 0, 0 },  // Identifier
+		ParseRule{ nudKeyword, nullptr, 0, 0 },  // Keyword
 		ParseRule{ nullptr, nullptr, 0, 0 },  // Comma
 		ParseRule{ nullptr, nullptr, 0, 0 }   // EndOfFile
 	};
@@ -25,21 +27,21 @@ const ParseTable& ParseRule::Table()
     return table;
 }
 
-Expr* nudIdentifier(PrattParser& parser)
+Expr* nudKeyword(PrattParser& parser)
 {
 	const Token& identifier = parser.peek();
-	if (identifier.type != TokenType::Identifier)
+	if (identifier.type != TokenType::Keyword)
 	{
 		ERR("Expected an identifier");
 	}
 	parser.consume(); // Consume the identifier token
 
-	const IdentifierInfo& identifierDetails = IdentifierInfo::getTable().getByName(identifier.content);
+	const KeywordInfo& identifierDetails = KeywordInfo::getTable().getByName(identifier.content);
 	std::vector<Expr*> arguments;
-	arguments.reserve(identifierDetails.argCount); // Reserve space for arguments
+	arguments.reserve(std::max(0, identifierDetails.argCount)); // Reserve space for arguments
 
 	if (identifierDetails.argCount == 0) {
-		return new IdentifierExpr(identifierDetails.id, {});
+		return new KeywordExpr(identifierDetails.id, {});
 	}
 
 	if (parser.peek().type != TokenType::LBracket)
@@ -51,6 +53,9 @@ Expr* nudIdentifier(PrattParser& parser)
 	// Parse arguments separated by commas
 	for (size_t i = 0; i < identifierDetails.argCount - 1; ++i) {
 		arguments.push_back(parseExpr(parser, TokenType::Comma, 0));
+		if (parser.peek().type == TokenType::Comma) {
+			parser.consume(); // Consume the comma
+		}
 	}
 	// Parse the last argument, which is followed by a closing bracket
 	arguments.push_back(parseExpr(parser, TokenType::RBracket, 0));
@@ -61,7 +66,7 @@ Expr* nudIdentifier(PrattParser& parser)
 	}
 	parser.consume(); // Consume the closing bracket	
 	
-	return new IdentifierExpr(identifierDetails.id, std::move(arguments));
+	return new KeywordExpr(identifierDetails.id, std::move(arguments));
 }
 
 Expr* nudLiteral(PrattParser& parser)
@@ -73,6 +78,17 @@ Expr* nudLiteral(PrattParser& parser)
 	}
 	parser.consume();
 	return new NumberExpr{ std::stod(peek.content) };
+}
+
+Expr* nudIdentifier(PrattParser& parser)
+{
+	const Token& peek = parser.peek();
+	if (peek.type != TokenType::Identifier)
+	{
+		ERR("Expected an identifier");
+	}
+	parser.consume(); // Consume the identifier token
+	return new IdentifierExpr(peek.content);
 }
 
 Expr* nudUnary(PrattParser& parser)
@@ -118,6 +134,27 @@ Expr* nudGroup(PrattParser& parser)
 	return expr;
 }
 
+// We allow inline assignment using the equals sign, which is a special case in the Pratt parser.
+Expr* ledEquals(PrattParser& parser, Expr* left)
+{
+	auto* identifier = dynamic_cast<IdentifierExpr*>(left);
+	if (!identifier)
+	{
+		ERR("Left side of assignment must be an identifier");
+	}
+	const Token& tok = parser.peek();
+	if (tok.type != TokenType::Equals)
+	{
+		ERR("Expected equals sign for assignment");
+	}
+	TokenType end = parser[parser.getPosition() - 2].type == TokenType::LBracket ? TokenType::RBracket : TokenType::EndOfFile;
+	parser.consume(); // Consume the equals sign
+	Expr* right = parseExpr(parser, end, ParseRule::Table()[static_cast<size_t>(tok.type)].rbp);
+	IdentifierExpr::setIdentifier(identifier->name, right->eval()); // Set the identifier value
+
+	return left; // Return the left side of the assignment, which is the identifier
+}
+
 Expr* parseExpr(PrattParser& parser, TokenType end, int minBindingPower)
 {
 	const auto& ruleTable = ParseRule::Table();
@@ -129,7 +166,7 @@ Expr* parseExpr(PrattParser& parser, TokenType end, int minBindingPower)
 	const ParseRule& rule1 = ruleTable[static_cast<size_t>(tok.type)];
 	if (!rule1.nud)
 	{
-		ERR("No nud function for token: " + tok.toString());
+		ERR(std::format("Token {} should not be at the beginning of an expression!", tok.toString()));
 	}
 
 	Expr* left = rule1.nud(parser);
@@ -138,13 +175,13 @@ Expr* parseExpr(PrattParser& parser, TokenType end, int minBindingPower)
 	{
 		const auto& nextTok = parser.peek();
 		const ParseRule& rule2 = ruleTable[static_cast<size_t>(nextTok.type)];
-		if (rule2.lbp <= minBindingPower)
+		if (rule2.lbp < minBindingPower)
 		{
 			break;
 		}
 		if (!rule2.led)
 		{
-			ERR("No led function for token: " + nextTok.toString());
+			ERR(std::format("Token {} should not be in the middle of an expression", nextTok.toString()));
 		}
 		left = rule2.led(parser, left);
 	}

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Tokenizer.h"
-#include "Identifier.h"
+#include "Keyword.h"
 #include <string>
 
 struct Expr
@@ -43,16 +43,28 @@ struct BinaryExpr : public Expr
 	std::string toString() const override;
 };
 
-struct IdentifierExpr : public Expr
+struct KeywordExpr : public Expr
 {
-	IdentifierType id;
+	KeywordType id;
 	std::vector<Expr*> operands;
 
-	IdentifierExpr(IdentifierType id, std::vector<Expr*>&& operand);
-	~IdentifierExpr();
+	KeywordExpr(KeywordType id, std::vector<Expr*>&& operand);
+	~KeywordExpr();
 	double eval() override;
 	std::string toString() const override;
 };
 
-IdentifierType stringToIdentifier(const std::string& str);
-std::string identifierToString(IdentifierType id);
+KeywordType stringToKeyword(const std::string& str);
+std::string keywordToString(KeywordType id);
+
+struct IdentifierExpr : public Expr
+{
+	std::string name;
+
+	IdentifierExpr(const std::string& name);
+	double eval() override;
+	std::string toString() const override;
+
+	static double lookupIdentifier(const std::string& name);
+	static void setIdentifier(const std::string& name, double value);
+};

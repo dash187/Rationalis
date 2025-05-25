@@ -129,14 +129,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Expr.h" />
-    <ClInclude Include="Identifier.h" />
+    <ClInclude Include="Keyword.h" />
     <ClInclude Include="Parser.h" />
     <ClInclude Include="ParseRule.h" />
     <ClInclude Include="Tokenizer.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Expr.cpp" />
-    <ClCompile Include="Identifier.cpp" />
+    <ClCompile Include="Keyword.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Parser.cpp" />
     <ClCompile Include="ParseRule.cpp" />

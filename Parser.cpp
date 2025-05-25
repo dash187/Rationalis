@@ -3,9 +3,8 @@
 #include <print>
 #include <sstream>
 
-PrattParser::PrattParser(std::vector<Token>&& tokens, size_t pos) : toks(std::move(tokens)), pos(pos)
-{
-}
+PrattParser::PrattParser(std::vector<Token>&& tokens, size_t pos) 
+	: toks(std::move(tokens)), pos(pos) {}
 
 // This just wraps the parseExpr function from ParseRule.h
 Expr* PrattParser::parseExpression()
@@ -28,6 +27,11 @@ const Token& PrattParser::peek()const
 const Token& PrattParser::nextToken() const
 {
 	return (*this)[pos + 1];
+}
+
+size_t PrattParser::getPosition() const
+{
+	return pos;
 }
 
 bool PrattParser::consume(size_t count)

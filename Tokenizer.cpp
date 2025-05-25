@@ -2,6 +2,7 @@
 
 #include <stdexcept>
 #include <iostream>
+#include "Keyword.h"
 
 const Token Token::END_OF_FILE{ TokenType::EndOfFile, "\0" };
 
@@ -25,8 +26,8 @@ std::string tokenTypeToString(TokenType type)
 		return ")";
 	case TokenType::Number:
 		return "Number";
-	case TokenType::Identifier:
-		return "Identifier";
+	case TokenType::Keyword:
+		return "Keyword";
 	case TokenType::Comma:
 		return ",";
 	default:
@@ -114,6 +115,8 @@ Token Tokenizer::getToken()
 		return Token{ TokenType::LBracket, "(" };
 	if (match(')'))
 		return Token{ TokenType::RBracket, ")" };
+	if (match('='))
+		return Token{ TokenType::Equals, "=" };
 	if (match(','))
 		return Token{ TokenType::Comma, "," };
 	if (isdigit(peek()) || peek() == '.') {
@@ -124,7 +127,13 @@ Token Tokenizer::getToken()
 	if (isalpha(peek())) {
 		size_t start = pos;
 		skipWord();
-		return Token{ TokenType::Identifier, tokens.substr(start, pos - start) };
+		std::string word = tokens.substr(start, pos - start);
+		if (KeywordInfo::getTable().contains(word)) {
+			return Token{ TokenType::Keyword, word };
+		}
+		else {
+			return Token{ TokenType::Identifier, word };
+		}
 	}
 	if (match('\0'))
 		return Token::END_OF_FILE;

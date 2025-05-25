@@ -3,7 +3,6 @@
 #include "Tokenizer.h"
 #include "Expr.h"
 #include <vector>
-#include <string>
 
 struct PrattParser
 {
@@ -15,6 +14,7 @@ public:
 	const Token& operator[](size_t index) const;
     const Token& peek() const;
 	const Token& nextToken() const;
+	size_t getPosition() const;
 	bool consume(size_t count = 1);
 
 	Expr* parseExpression();

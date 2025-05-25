@@ -64,26 +64,26 @@ std::string BinaryExpr::toString() const
 }
 
 // -----------------------------------------------------
-IdentifierExpr::IdentifierExpr(IdentifierType id, std::vector<Expr*>&& operands) : id(id), operands(std::move(operands)) {}
-IdentifierExpr::~IdentifierExpr() { for (Expr* expr : operands) delete expr; }
+KeywordExpr::KeywordExpr(KeywordType id, std::vector<Expr*>&& operands) : id(id), operands(std::move(operands)) {}
+KeywordExpr::~KeywordExpr() { for (Expr* expr : operands) delete expr; }
 
-double IdentifierExpr::eval()
+double KeywordExpr::eval()
 {
 	std::vector<double> args(operands.size());
 	for (size_t i = 0; i < args.size(); ++i) {
 		args[i] = operands[i]->eval();
 	}
 
-	const IdentifierInfo& info = IdentifierInfo::getTable().getByID(id);
-	if (info.argCount != args.size()) {
+	const KeywordInfo& info = KeywordInfo::getTable().getByID(id);
+	if (info.argCount != -1 && info.argCount != args.size()) {
 		throw std::runtime_error(std::format("Wrong number of arguments: Expected: {}, got: {}", info.argCount, args.size()));
 	}
 	return info.eval(args);
 }
 
-std::string IdentifierExpr::toString() const
+std::string KeywordExpr::toString() const
 {
-	std::string result = identifierToString(id);
+	std::string result = keywordToString(id);
 	if (operands.empty()) {
 		return result;
 	}
@@ -97,18 +97,43 @@ std::string IdentifierExpr::toString() const
 	return result;
 }
 
-IdentifierType stringToIdentifier(const std::string& str)
+KeywordType stringToKeyword(const std::string& str)
 {
-	try {
-		return IdentifierInfo::getTable().getByName(str).id;
-	}
-	catch (...) {
-		throw std::runtime_error("Unknown identifier: " + str);
-	}
+	return KeywordInfo::getTable().getByName(str).id;
 }
 
-std::string identifierToString(IdentifierType id)
+std::string keywordToString(KeywordType id)
 {
-	const IdentifierInfo& info = IdentifierInfo::getTable().getByID(id);
-	return info.toString();
+	return KeywordInfo::getTable().getByID(id).name;
+}
+
+// -----------------------------------------------------
+static std::unordered_map<std::string, double> variables = {};
+
+IdentifierExpr::IdentifierExpr(const std::string& name)
+	: name(name) {
+}
+
+double IdentifierExpr::eval()
+{
+	return lookupIdentifier(name);
+}
+
+std::string IdentifierExpr::toString() const
+{
+	return name;
+}
+
+double IdentifierExpr::lookupIdentifier(const std::string& name)
+{
+	auto it = variables.find(name);
+	if (it != variables.end()) {
+		return it->second;
+	}
+	throw std::runtime_error(std::format("Identifier '{}' not found", name));
+}
+
+void IdentifierExpr::setIdentifier(const std::string& name, double value)
+{
+	variables[name] = value;
 }
